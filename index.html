@@ -76,7 +76,7 @@ post({k,n:f.name.slice(0,120),s:f.size,...await up(f)})}catch(x){note('Yüklenem
 e.target.value=''}}
 
 /* gerçek sohbet */
-async function login(pw){const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({a:'login',pw})});if(r.status===401)return false;if(!r.ok)throw 0;const j=await r.json();return j.decoy?'decoy':j.token}
+async function login(pw){const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({a:'login',pw,sid})});if(r.status===401)return false;if(!r.ok)throw 0;const j=await r.json();return j.decoy?'decoy':j.token}
 async function real(tok){
 shell();let ms=[],bc={};
 const H={'content-type':'application/json',authorization:'Bearer '+tok};
@@ -96,12 +96,15 @@ try{const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'appl
 paint(L);watch();wire(x=>{L.push({ts:Date.now(),...x});paint(L)},async f=>({u:URL.createObjectURL(f)}))}
 
 /* şifre kapısı */
-let stage=1,on=false,lt=0,un=null;
-const LOCK_MS=10000,LOCK_IDLE=true;
-const lock=()=>{on=false;clearTimeout(lt);try{typeof un==='function'&&un()}catch(e){}un=null;stage=1;gate()};
-const arm=()=>{if(!on)return;clearTimeout(lt);lt=setTimeout(lock,LOCK_MS)};
-const watch=()=>{on=true;arm();if(LOCK_IDLE)['pointerdown','keydown','touchstart','scroll','input'].forEach(n=>addEventListener(n,arm,{capture:true,passive:true}))};
+let stage=1,on=false,last=0,un=null,sid='';
+const LOCK_MS=10000;
+const lock=()=>{on=false;try{typeof un==='function'&&un()}catch(e){}un=null;stage=1;gate()};
+const arm=()=>{last=Date.now()};
+['keydown','keyup','keypress','beforeinput','input','pointerdown','touchstart','click','scroll','wheel'].forEach(n=>addEventListener(n,arm,{capture:true,passive:true}));
+setInterval(()=>{if(on&&Date.now()-last>=LOCK_MS)lock()},500);
+const watch=()=>{on=true;arm()};
 function gate(){
+sid=[...crypto.getRandomValues(new Uint8Array(12))].map(x=>x.toString(16).padStart(2,'0')).join('');
 document.body.innerHTML='<div class="gate"><div class="box"><h2 id="gt">Giriş</h2><input id="pw" type="password" autocomplete="off" placeholder="Şifre"><button id="go">Gir</button><p id="gm"></p></div></div>';
 const go=async()=>{const v=$('#pw').value;$('#pw').value='';let t;
 try{t=await login(v)}catch(e){return note('Bağlantı hatası veya çok fazla deneme')}

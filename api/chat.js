@@ -6,7 +6,7 @@ const rd=async c=>(await(await fetch(U,{method:'POST',headers:{authorization:'Be
 const hr=()=>+new Intl.DateTimeFormat('en-GB',{hour:'2-digit',hourCycle:'h23',timeZone:'Europe/Istanbul'}).format(new Date())%24;
 const pb=(pw,rec)=>new Promise(ok=>{const[s,h]=rec.split(':');crypto.pbkdf2(pw.normalize('NFC'),Buffer.from(s,'hex'),A.IT,32,'sha256',(e,d)=>ok(!e&&crypto.timingSafeEqual(d,Buffer.from(h,'hex'))))});
 const sig=e=>crypto.createHmac('sha256',sec).update(String(e)).digest('hex');
-const mk=()=>{const e=Date.now()+600000;return e+'.'+sig(e)};
+const mk=()=>{const e=Date.now()+21600000;return e+'.'+sig(e)};
 const vt=t=>{const[e,s]=String(t).split('.');if(!e||!s||+e<Date.now())return false;const x=Buffer.from(sig(e)),y=Buffer.from(s);return x.length===y.length&&crypto.timingSafeEqual(x,y)};
 const ID=/^[0-9a-f]{24}$/;
 module.exports=async(req,res)=>{
@@ -17,13 +17,14 @@ if(!U||!K||!A.T)return res.status(500).end();
 const b=req.body||{};
 if(req.method==='POST'&&b.a==='login'){
 const ip=(req.headers['x-forwarded-for']||'').split(',')[0].trim()||'x',rk='rl:'+ip;
-const n=+(await rd(['GET',rk]))||0;
-if(n>=10)return res.status(429).end();
+if(+(await rd(['GET',rk]))>=10)return res.status(429).end();
+const sk=/^[0-9a-f]{16,32}$/.test(String(b.sid||''))?'f:'+b.sid:rk;
+const n=+(await rd(['GET',sk]))||0;
 const pw=String(b.pw||'').slice(0,100);
 const vip=await pb(pw,A.P2);
 const ok=vip||(await pb(pw,A.T[hr()]));
-if(!ok){if((await rd(['INCR',rk]))==1)await rd(['EXPIRE',rk,600]);return res.status(401).end()}
-if(vip){if(n)await rd(['DEL',rk]);return res.json({token:mk()})}
+if(!ok){if((await rd(['INCR',rk]))==1)await rd(['EXPIRE',rk,600]);if(sk!==rk&&(await rd(['INCR',sk]))==1)await rd(['EXPIRE',sk,600]);return res.status(401).end()}
+if(vip)return res.json({token:mk()});
 if(n>=1)return res.json({decoy:1});
 return res.json({token:mk()})}
 if(!vt((req.headers.authorization||'').slice(7)))return res.status(401).end();
