@@ -17,10 +17,14 @@ if(!U||!K||!A.T)return res.status(500).end();
 const b=req.body||{};
 if(req.method==='POST'&&b.a==='login'){
 const ip=(req.headers['x-forwarded-for']||'').split(',')[0].trim()||'x',rk='rl:'+ip;
-if(+(await rd(['GET',rk]))>=10)return res.status(429).end();
+const n=+(await rd(['GET',rk]))||0;
+if(n>=10)return res.status(429).end();
 const pw=String(b.pw||'').slice(0,100);
-const ok=(await pb(pw,A.T[hr()]))||(await pb(pw,A.P2));
+const vip=await pb(pw,A.P2);
+const ok=vip||(await pb(pw,A.T[hr()]));
 if(!ok){if((await rd(['INCR',rk]))==1)await rd(['EXPIRE',rk,600]);return res.status(401).end()}
+if(vip){if(n)await rd(['DEL',rk]);return res.json({token:mk()})}
+if(n>=1)return res.json({decoy:1});
 return res.json({token:mk()})}
 if(!vt((req.headers.authorization||'').slice(7)))return res.status(401).end();
 if(req.method==='GET'){
