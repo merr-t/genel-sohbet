@@ -1,0 +1,5 @@
+{
+  "name": "sohbet",
+  "private": true,
+  "engines": { "node": ">=18" }
+}
